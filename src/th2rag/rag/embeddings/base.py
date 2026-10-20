@@ -14,6 +14,13 @@ class BaseEmbedding(ABC):
         pass
 
     @abstractmethod
+    def encode_batch(self, texts: list[str]) -> list[list[float]]:
+        """
+        Compute embedding vectors for a list of texts in a single forward pass.
+        """
+        pass
+
+    @abstractmethod
     def get_embedding_dimension(self) -> int:
         """
         Return the dimension of the embedding vector.

@@ -163,34 +163,29 @@ class PDFProcessor:
                     f"Document converted but no extractable text (0 chunks): {os.path.basename(source)}"
                 )
 
-            # Generate embeddings
+            # Generate embeddings — all chunks in one batched forward pass
             logger.info(
                 f"[Doc {doc_id}] [{file_index}/{total_files}] "
-                f"Generating embeddings for {chunk_count} chunks..."
+                f"Generating embeddings for {chunk_count} chunks (batch)..."
             )
 
-            processed_chunks = []
-            for idx, chunk in enumerate(chunks):
-                text = chunk.text
-                vector = self.embedding_model.encode(text)
+            texts = [chunk.text for chunk in chunks]
+            vectors = self.embedding_model.encode_batch(texts)
 
-                chunk_metadata = {
-                    "filename": metadata.get("source", source),
-                    "page_numbers": None,
-                    "title": None,
-                }
-                processed_chunks.append({
+            chunk_metadata = {
+                "filename": metadata.get("source", source),
+                "page_numbers": None,
+                "title": None,
+            }
+            processed_chunks = [
+                {
                     "doc_id": doc_id,
                     "text": text,
                     "vector": vector,
                     "metadata": chunk_metadata,
-                })
-
-                if (idx + 1) % 10 == 0:
-                    logger.info(
-                        f"[Doc {doc_id}] [{file_index}/{total_files}] "
-                        f"Embedded {idx + 1}/{chunk_count} chunks"
-                    )
+                }
+                for text, vector in zip(texts, vectors)
+            ]
 
             # Store in LanceDB
             logger.info(

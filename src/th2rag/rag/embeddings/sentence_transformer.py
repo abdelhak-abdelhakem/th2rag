@@ -70,7 +70,7 @@ class SentenceTransformerEmbedding(BaseEmbedding):
     def encode(self, text: str) -> list[float]:
         """
         Encode text into a vector using SentenceTransformer.
-    
+
         """
         try:
             embedding = self.model.encode(text, convert_to_numpy=True).tolist()
@@ -80,6 +80,23 @@ class SentenceTransformerEmbedding(BaseEmbedding):
             logger.error(f"Embedding encoding failed: {e}")
             raise exceptions.EmbeddingException(
                 f"Failed to encode text: {str(e)}"
+            )
+
+    def encode_batch(self, texts: list[str]) -> list[list[float]]:
+        """
+        Encode a list of texts in a single forward pass.
+
+        Significantly faster than calling encode() N times because the
+        transformer processes all sequences in one batched inference call.
+        """
+        try:
+            embeddings = self.model.encode(texts, convert_to_numpy=True)
+            logger.debug(f"Batch-encoded {len(texts)} texts, dimension: {embeddings.shape[1]}")
+            return [vec.tolist() for vec in embeddings]
+        except Exception as e:
+            logger.error(f"Batch embedding encoding failed: {e}")
+            raise exceptions.EmbeddingException(
+                f"Failed to batch encode {len(texts)} texts: {str(e)}"
             )
 
 
